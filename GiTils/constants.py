@@ -7,7 +7,8 @@ from . import utils
 class ConfigConst(type):
     def __init__(cls, name, bases, attrs, **kwargs):
         try:
-            with open("config.json", "r") as f:
+            print(os.getcwd())
+            with open(os.path.join(os.getcwd(), "config.json"), "r") as f:
                 data = json.load(f)
         except FileNotFoundError:
             raise FileNotFoundError("No config file found! Please create a config file") from None
