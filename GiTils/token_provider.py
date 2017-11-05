@@ -1,6 +1,7 @@
-import constants
-from gitils import app
 from spotipy.oauth2 import SpotifyClientCredentials
+
+from . import constants
+from .gitils import app
 
 spotify_credentials = SpotifyClientCredentials(constants.Spotify.CLIENT_ID, constants.Spotify.CLIENT_SECRET)
 
