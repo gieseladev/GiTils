@@ -5,7 +5,7 @@ class EnvironConst(type):
     def __init__(cls, name, bases, attrs, **kwargs):
         for var, val in vars(cls).items():
             if var.isupper():
-                env_key = val or "{}_{}".format(name, var).lower()
+                env_key = val or "{}_{}".format(name, var).upper()
 
                 try:
                     env_value = os.environ[env_key]
