@@ -7,6 +7,7 @@ sys.path.insert(0, "/var/www/GiTils/")
 
 
 def run():
+    from GiTils import constants
     from GiTils import app as application
 
 
