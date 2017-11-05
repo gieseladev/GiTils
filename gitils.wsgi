@@ -5,7 +5,7 @@ import sys
 logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, "/var/www/GiTils/")
 
-application
+application = None
 
 
 def run():
