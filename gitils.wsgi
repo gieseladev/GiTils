@@ -2,13 +2,14 @@
 import logging
 import sys
 
+from GiTils import constants
+
 logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, "/var/www/GiTils/")
 
 
 def run():
-    from GiTils import constants
-    from GiTils import app as application
+    from GiTils.gitils import app as application
 
 
 run()
