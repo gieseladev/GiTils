@@ -5,9 +5,15 @@ import sys
 logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, "/var/www/GiTils/")
 
+application
+
 
 def run():
-    from GiTils import app as application
+    global application
+
+    from GiTils import app
+
+    application = app
 
 
 run()
