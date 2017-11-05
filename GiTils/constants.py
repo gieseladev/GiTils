@@ -10,12 +10,13 @@ class ConfigConst(type):
             script_path = os.path.abspath(__file__)
             script_dir = os.path.split(script_path)[0]
             rel_path = "config.json"
-            abs_file_path = os.path.join(script_dir, rel_path)
+            abs_file_path = os.path.join(script_dir, os.pardir, rel_path)
 
             with open(abs_file_path, "r") as f:
                 data = json.load(f)
+
         except FileNotFoundError:
-            raise FileNotFoundError("No config file found! Please create a config.json file") from None
+            raise FileNotFoundError("No config file found! Please create a config.json file at " + abs_file_path) from None
         except json.JSONDecodeError:
             raise Exception("Can't parse config file, please make sure it's valid JSON") from None
 
