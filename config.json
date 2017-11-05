@@ -3,7 +3,7 @@
     "giesela_ip": "46.101.72.159"
   },
   "spotify": {
-    "client_id": "df9e44098b934c028ea085227c3ec3f6",
-    "client_secret": "f9d02852fb1a4dacaa50d14e915c5d0e"
+    "client_id": "<Spotify Client ID>",
+    "client_secret": "<Spotify Client Secret>"
   }
 }
