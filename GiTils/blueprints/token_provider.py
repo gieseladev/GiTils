@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from .. import constants
@@ -11,4 +11,4 @@ spotify_credentials = SpotifyClientCredentials(constants.Spotify.CLIENT_ID, cons
 
 @blueprint.route("/spotify")
 def get_spotify_token():
-    return spotify_credentials.token_info
+    return jsonify(spotify_credentials.token_info)
