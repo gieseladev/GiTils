@@ -11,4 +11,5 @@ spotify_credentials = SpotifyClientCredentials(constants.Spotify.CLIENT_ID, cons
 
 @blueprint.route("/spotify")
 def get_spotify_token():
+    spotify_credentials.get_access_token()
     return jsonify(spotify_credentials.token_info)
