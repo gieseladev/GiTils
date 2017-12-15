@@ -2,7 +2,7 @@ import flask
 import flask_cors
 
 from . import constants
-from .blueprints import token_provider
+from .blueprints import lyrics, token_provider
 
 app = flask.Flask("GiTils")
 constants.Static.APP = app

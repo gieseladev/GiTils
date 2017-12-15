@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 
 from .constants import FileLocations, Google, Static
 
-lyrics_folder = path.join(Static.APP.root_path(), FileLocations.LYRICS)
+lyrics_folder = path.join(Static.ROOT, FileLocations.LYRICS)
 lyrics_version = 3
 required_version = 2
 

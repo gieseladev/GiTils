@@ -4,13 +4,18 @@ import os
 from . import utils
 
 
+class Static:
+    ROOT = None
+
+
 class ConfigConst(type):
     def __init__(cls, name, bases, attrs, **kwargs):
         try:
             script_path = os.path.abspath(__file__)
             script_dir = os.path.split(script_path)[0]
+            Static.ROOT = os.path.join(script_dir, os.pardir)
             rel_path = "config.json"
-            abs_file_path = os.path.join(script_dir, os.pardir, rel_path)
+            abs_file_path = os.path.join(Static.ROOT, rel_path)
 
             with open(abs_file_path, "r") as f:
                 data = json.load(f)
@@ -43,10 +48,6 @@ class Spotify(metaclass=ConfigConst):
 
 class Google(metaclass=ConfigConst):
     API_KEY = ""
-
-
-class Static:
-    APP = None
 
 
 class FileLocations:
