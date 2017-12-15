@@ -5,6 +5,7 @@ from . import constants
 from .blueprints import token_provider
 
 app = flask.Flask("GiTils")
+constants.Static.APP = app
 
 flask_cors.CORS(app)
 

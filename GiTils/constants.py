@@ -39,3 +39,15 @@ class Variables(metaclass=ConfigConst):
 class Spotify(metaclass=ConfigConst):
     CLIENT_ID = ""
     CLIENT_SECRET = ""
+
+
+class Google(metaclass=ConfigConst):
+    API_KEY = ""
+
+
+class Static:
+    APP = None
+
+
+class FileLocations:
+    LYRICS = "data/lyrics"

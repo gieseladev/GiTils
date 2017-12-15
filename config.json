@@ -5,5 +5,8 @@
   "spotify": {
     "client_id": "<Spotify Client ID>",
     "client_secret": "<Spotify Client Secret>"
+  },
+  "google": {
+    "api_key": "<Google API key>"
   }
 }
