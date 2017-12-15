@@ -1,3 +1,5 @@
+"""Lyrics grabber."""
+
 import json
 import os
 import re
@@ -16,6 +18,7 @@ required_version = 2
 
 
 def ensure_cache_folder():
+    """Make sure there's a folder."""
     if path.isdir(lyrics_folder):
         return True
     else:
@@ -24,13 +27,15 @@ def ensure_cache_folder():
 
 
 def escape_query(query):
+    """Create a filename from query."""
     filename = re.sub(r"\s+", "_", query)
     filename = re.sub(r"\W+", "-", filename)
 
     return filename.lower().strip() + ".json"
 
 
-def check_cache(query, load=True):
+def check_cache(query):
+    """Check if query is cached."""
     ensure_cache_folder()
 
     file_path = path.join(lyrics_folder, escape_query(query))
@@ -50,6 +55,7 @@ def check_cache(query, load=True):
 
 
 def cache_lyrics(query, lyrics):
+    """Cache the lyrics."""
     ensure_cache_folder()
 
     if check_cache(query, load=False):
@@ -66,6 +72,7 @@ def cache_lyrics(query, lyrics):
 
 
 def search_for_lyrics(query):
+    """Search for the lyrics for query."""
     cached_lyrics = check_cache(query)
 
     if cached_lyrics:
@@ -80,6 +87,7 @@ def search_for_lyrics(query):
 
 
 def search_for_lyrics_google(query):
+    """Use custom search engine to retrive results."""
     params = {
         "key": Google.API_KEY,
         "cx": "002017775112634544492:7y5bpl2sn78",

@@ -1,4 +1,6 @@
 #!/usr/bin/python
+"""Apache start."""
+
 import logging
 import sys
 
@@ -9,6 +11,7 @@ application = None
 
 
 def run():
+    """Run the server."""
     global application
 
     from GiTils import app
