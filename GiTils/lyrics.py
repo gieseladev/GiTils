@@ -58,7 +58,7 @@ def cache_lyrics(query, lyrics):
     """Cache the lyrics."""
     ensure_cache_folder()
 
-    if check_cache(query, load=False):
+    if check_cache(query):
         return False
     else:
         file_path = path.join(lyrics_folder, escape_query(query))
