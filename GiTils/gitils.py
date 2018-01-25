@@ -1,15 +1,20 @@
 """Main entry point for the server."""
 
-import flask
-import flask_cors
+import importlib
 
-from . import constants
-from .blueprints import lyrics, token_provider
+from flask import Flask
+from pymongo import MongoClient
 
-app = flask.Flask("GiTils")
-constants.Static.APP = app
+ACTIVE_BLUEPRINTS = ["token_provider", "lyrics"]
 
-flask_cors.CORS(app)
+app = Flask(__name__)
+app.config.from_object(f"{__package__}.default_config")
+app.config.from_envvar("GITILS_SETTINGS")
 
-app.register_blueprint(token_provider.blueprint)
-app.register_blueprint(lyrics.blueprint)
+mongo_client = MongoClient(app.config["MONGODB_URI"])
+mongo_database = mongo_client[__package__]
+
+
+for bp in ACTIVE_BLUEPRINTS:
+    module = importlib.import_module(f"{__package__}.blueprints.{bp}")
+    app.register_blueprint(module.blueprint)

@@ -1,6 +1,5 @@
 flask
-flask-cors
+pymongo
 
 spotipy
-beautifulsoup4
 lyricsfinder
