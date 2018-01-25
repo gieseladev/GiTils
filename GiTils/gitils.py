@@ -2,19 +2,38 @@
 
 import importlib
 
-from flask import Flask
+from flask import Flask, g
 from pymongo import MongoClient
-
-ACTIVE_BLUEPRINTS = ["token_provider", "lyrics"]
+from werkzeug.local import LocalProxy
 
 app = Flask(__name__)
 app.config.from_object(f"{__package__}.default_config")
 app.config.from_envvar("GITILS_SETTINGS")
 
-mongo_client = MongoClient(app.config["MONGODB_URI"])
-mongo_database = mongo_client[__package__]
+
+def get_mongo():
+    """Get or create the Mongo client."""
+    if "mongo_client" not in g:
+        g.mongo_client = MongoClient(app.config["MONGODB_URI"])
+    return g.mongo_client
 
 
-for bp in ACTIVE_BLUEPRINTS:
+def get_mongo_database():
+    """Get the database."""
+    return get_mongo()[__package__]
+
+
+mongo_client = LocalProxy(get_mongo)
+mongo_database = LocalProxy(get_mongo_database)
+
+
+@app.teardown_appcontext
+def close_mongo(exception):
+    """Clean closing for MongoDB."""
+    if "mongo_client" in g:
+        g.mongo_client.close()
+
+
+for bp in app.config["ACTIVE_BLUEPRINTS"]:
     module = importlib.import_module(f"{__package__}.blueprints.{bp}")
     app.register_blueprint(module.blueprint)
