@@ -3,7 +3,7 @@
 import logging
 
 import lyricsfinder
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, jsonify
 from lyricsfinder.utils import safe_filename
 
 from GiTils.gitils import mongo_database
@@ -26,4 +26,11 @@ def get_lyrics(query):
         lyrics_data["filename"] = lyrics.save_name
         log.debug(f"saved lyrics for query {query}")
         coll.insert_one(lyrics_data)
-    return lyrics_data
+
+    lyrics = {
+        "title": lyrics_data["title"],
+        "lyrics": lyrics_data["lyrics"],
+        "origin": lyrics_data["origin"],
+        "timestamp": lyrics_data["timestamp"]
+    }
+    return jsonify(lyrics)
