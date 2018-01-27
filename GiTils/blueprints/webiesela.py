@@ -12,7 +12,7 @@ from enum import IntEnum
 from string import ascii_uppercase
 from threading import Lock, Thread
 
-from bson.objectid import ObjectId
+from bson.objectid import InvalidId, ObjectId
 from flask import Blueprint, current_app, jsonify, request
 from pymongo.errors import DuplicateKeyError
 
@@ -30,6 +30,7 @@ class Error(IntEnum):
     """Error codes."""
 
     GENERAL = 0
+    INVALID_REQUEST = 1
 
     VALIDATION_ERROR = 1001
     ALREADY_REGISTERED = 1002
@@ -137,8 +138,13 @@ def server_login():
 @blueprint.route("/endpoint/<token>")
 def get_endpoint(token):
     """Get the appropriate address for a Giesela instance identified by the token."""
+    try:
+        token = ObjectId(token)
+    except InvalidId:
+        return error_response(Error.INVALID_REQUEST, f"The provided token isn't a valid token ({token})")
     coll = mongo_database.giesela_servers
-    res = coll.find_one({"tokens": ObjectId(token)})
+
+    res = coll.find_one({"tokens": token})
     if not res:
         return error_response(Error.TOKEN_UNKNOWN, f"token isn't bound to any server ({token})")
 

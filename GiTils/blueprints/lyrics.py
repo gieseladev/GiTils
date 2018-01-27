@@ -24,8 +24,10 @@ def get_lyrics(query):
         try:
             lyrics = lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"])
         except lyricsfinder.exceptions.LyricsException:
-            # TODO: return error
-            pass
+            return jsonify({
+                "success": False,
+                "error": f"Couldn't find any lyrics for that query. ({query})"
+            })
         else:
             lyrics_data = lyrics.to_dict()
             lyrics_data["filename"] = lyrics.save_name
@@ -33,6 +35,7 @@ def get_lyrics(query):
             coll.insert_one(lyrics_data)
 
     lyrics = {
+        "success": True,
         "title": lyrics_data["title"],
         "lyrics": lyrics_data["lyrics"],
         "origin": lyrics_data["origin"],
