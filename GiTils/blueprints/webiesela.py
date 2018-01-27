@@ -12,6 +12,7 @@ from enum import IntEnum
 from string import ascii_uppercase
 from threading import Lock, Thread
 
+from bson.objectid import ObjectId
 from flask import Blueprint, current_app, jsonify, request
 from pymongo.errors import DuplicateKeyError
 
@@ -137,7 +138,7 @@ def server_login():
 def get_endpoint(token):
     """Get the appropriate address for a Giesela instance identified by the token."""
     coll = mongo_database.giesela_servers
-    res = coll.find_one({"tokens": token})
+    res = coll.find_one({"tokens": ObjectId(token)})
     if not res:
         return error_response(Error.TOKEN_UNKNOWN, f"token isn't bound to any server ({token})")
 
