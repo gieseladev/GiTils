@@ -25,6 +25,18 @@ blueprint = Blueprint("Webiesela", __name__, url_prefix="/webiesela")
 
 ws_test_lock = Lock()
 
+"""
+    Switch away from using the ip address for the server identification and start using gitokens.
+    Why? Because some self hosters don't host on a static ip address (I know, crazy) but I'd feel bad locking them out.
+
+    Registration flow:
+    - call /register which returns a gitoken (if the remote address is already supposed to be registered, return the existing gitoken)
+
+    Login flow:
+    - Call /login with gitoken which updates corresponding documents.
+    - Call /claim with gitoken and regtoken parameters.
+"""
+
 
 class Error(IntEnum):
     """Error codes."""
@@ -67,7 +79,7 @@ def _test_websocket(addr):
         return
 
     try:
-        # TODO: get some info
+        # TODO: maybe get some info
         pass
     except WebSocketException:
         test_websocket.result = False
