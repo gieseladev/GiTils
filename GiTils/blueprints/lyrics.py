@@ -21,11 +21,16 @@ def get_lyrics(query):
     lyrics_data = coll.find_one({"filename": safe_filename(query)})
 
     if not lyrics_data:
-        lyrics = lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"])
-        lyrics_data = lyrics.to_dict()
-        lyrics_data["filename"] = lyrics.save_name
-        log.debug(f"saved lyrics for query {query}")
-        coll.insert_one(lyrics_data)
+        try:
+            lyrics = lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"])
+        except lyricsfinder.exceptions.LyricsException:
+            # TODO: return error
+            pass
+        else:
+            lyrics_data = lyrics.to_dict()
+            lyrics_data["filename"] = lyrics.save_name
+            log.debug(f"saved lyrics for query {query}")
+            coll.insert_one(lyrics_data)
 
     lyrics = {
         "title": lyrics_data["title"],
