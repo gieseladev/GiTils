@@ -25,18 +25,6 @@ blueprint = Blueprint("Webiesela", __name__, url_prefix="/webiesela")
 
 ws_test_lock = Lock()
 
-"""
-    Switch away from using the ip address for the server identification and start using gitokens.
-    Why? Because some self hosters don't host on a static ip address (I know, crazy) but I'd feel bad locking them out.
-
-    Registration flow:
-    - call /register which returns a gitoken (if the remote address is already supposed to be registered, return the existing gitoken)
-
-    Login flow:
-    - Call /login with gitoken which updates corresponding documents.
-    - Call /claim with gitoken and regtoken parameters.
-"""
-
 
 class Error(IntEnum):
     """Error codes."""
@@ -68,6 +56,16 @@ def error_response(error, msg):
         "msg": msg
     }
     return response(error=error, success=False)
+
+
+def cast_type(cls, val, default):
+    """."""
+    try:
+        val = cls(val)
+    except Exception:
+        val = default
+
+    return val
 
 
 def _test_websocket(addr):
@@ -108,22 +106,37 @@ def generate_regtoken(length, population=ascii_uppercase):
     return token
 
 
-@blueprint.route("/server/login")
-def server_login():
-    """Register a Giesela instance."""
+@blueprint.route("/server/login/<gitoken>")
+def server_login(gitoken):
+    """Login a Giesela instance.
+
+    Use with gitoken="new" to register the instance.
+    """
+    coll = mongo_database.giesela_servers
     ws_ip = request.remote_addr
 
-    coll = mongo_database.giesela_servers
-    res = coll.find_one({"ip": ws_ip})
-    if res:
-        default_secure = res["secure"]
-        default_port = res["port"]
+    if gitoken == "new":
+        res = coll.find_one({"ip": ws_ip})
+        if res:
+            gitoken = res["_id"]
+        else:
+            gitoken = ObjectId()
+            res = {
+                "secure": False,
+                "port": 8000
+            }
     else:
-        default_secure = False
-        default_port = 8000
+        try:
+            gitoken = ObjectId(gitoken)
+        except InvalidId:
+            return error_response(Error.INVALID_REQUEST, f"The provided gitoken isn't a valid token ({gitoken})")
 
-    ws_secure = request.args.get("secure", default_secure)
-    ws_port = request.args.get("port", default_port)
+        res = coll.find_one({"_id": gitoken})
+        if not res:
+            return error_response(Error.TOKEN_UNKNOWN, f"This token isn't registered. ({gitoken})")
+
+    ws_secure = cast_type(lambda v: v.lower() in {"true", "yes", "y", "t"}, request.args.get("secure"), res["secure"])
+    ws_port = cast_type(int, request.args.get("port"), res["port"])
 
     ws_prefix = "wss" if ws_secure else "ws"
     ws_address = f"{ws_prefix}://{ws_ip}:{ws_port}"
@@ -131,20 +144,20 @@ def server_login():
         return error_response(Error.VALIDATION_ERROR, f"Couldn't validate address ({ws_address})")
 
     # THIS IS AWESOME!
-    coll.update_one({"ip": ws_ip}, {
+    coll.update_one({"_id": gitoken}, {
         "$setOnInsert": {
-            "ip": ws_ip,
             "tokens": [],
             "registered_at": datetime.utcnow()
         },
         "$set": {
             "address": ws_address,
+            "ip": ws_ip,
             "port": ws_port,
             "secure": ws_secure,
             "last_edit_at": datetime.utcnow()
         }
     }, upsert=True)
-    return response(address=ws_address)
+    return response(address=ws_address, gitoken=str(gitoken))
 
 
 @blueprint.route("/endpoint/<token>")
