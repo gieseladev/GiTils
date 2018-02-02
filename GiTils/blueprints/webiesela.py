@@ -59,7 +59,7 @@ def error_response(error, msg):
 
 
 def cast_type(cls, val, default):
-    """."""
+    """Convert val to cls or return default."""
     try:
         val = cls(val)
     except Exception:

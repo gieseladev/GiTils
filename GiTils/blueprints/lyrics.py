@@ -21,9 +21,8 @@ def get_lyrics(query):
     lyrics_data = coll.find_one({"filename": safe_filename(query)})
 
     if not lyrics_data:
-        try:
-            lyrics = lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"])
-        except lyricsfinder.exceptions.LyricsException:
+        lyrics = lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"])
+        if not lyrics:
             return jsonify({
                 "success": False,
                 "error": f"Couldn't find any lyrics for that query. ({query})"
