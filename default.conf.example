@@ -1,0 +1,68 @@
+# Example - Basic nginx configuration file  
+
+server {
+    listen       80;
+    server_name  localhost;
+
+    access_log  /var/log/nginx/host.access.log  main;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+}
+
+# Main server block, serving from uWSGI, Flask with strong SSL, http2 and CORS headers (GET)
+
+server {
+    listen 443 ssl http2; # listen on 443 (SSL), enable http2
+    server_name gitils.giesela.io; # application server name
+    ssl_certificate /etc/letsencrypt/live/gitils.giesela.io/fullchain.pem; # path to cert
+    ssl_certificate_key /etc/letsencrypt/live/gitils.giesela.io/privkey.pem; # path to private key
+    ssl_trusted_certificate /etc/letsencrypt/live/gitils.giesela.io/fullchain.pem; # OCSP stapling
+
+    ssl_session_timeout 1d; # SSL timeout
+    ssl_session_cache shared:SSL:50m; # SSL cache-control
+    ssl_session_tickets off; # forward secrecy 
+
+    ssl_protocols TLSv1.2 TLSv1.3; # modern TLS versions
+    ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-  SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+    ssl_ecdh_curve secp384r1; # strong EC curve
+    ssl_prefer_server_ciphers on; # prefer chosen ciphers 
+    ssl_stapling on; # OCSP stapling
+    ssl_stapling_verify on; # OCSP stapling verification
+    resolver 8.8.8.8 8.8.4.4; # DNS resolvers 
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains; preload"; # HTTP Strict Transport Security  
+    add_header X-Frame-Options DENY; # X-Frame Security 
+    add_header X-Content-Type-Options nosniff; # XSS Security
+    add_header X-XSS-Protection "1; mode=block"; # XSS Security
+    add_header X-Frame-Options SAMEORIGIN; # X-Frame Origin Security 
+
+location / {
+        include uwsgi_params; # required uWSGI init
+        uwsgi_pass unix:///home/vlexar/GiTils/GiTils/gitils.sock; # path to uWSGI socket
+        # CORS 
+        add_header 'Access-Control-Allow-Origin' '*'; 
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS'; 
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range'; 
+    }
+}
+
+# Force SSL (301/redirect), CORS headers (GET) 
+
+server {
+	listen 80; # listen on 80 (non-SSL)
+	listen [::]:80; 
+	server_name gitils.giesela.io; # application server name
+
+	location / {
+        # CORS
+	    add_header 'Access-Control-Allow-Origin' '*'; 
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range'; 
+        return 301 https://gitils.giesela.io$request_uri; # Force SSL redirection (301) 
+	}
+}
