@@ -4,4 +4,4 @@ pymongo==3.6.1
 spotipy==2.4.4
 lyricsfinder==1.2.5
 websocket-client==0.47.0
-dnspython
+dnspython==1.15.0
