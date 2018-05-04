@@ -1,5 +1,5 @@
 flask==1.0.2
-pymongo
+pymongo==3.6.1
 
 spotipy
 lyricsfinder
