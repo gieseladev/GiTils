@@ -1,0 +1,10 @@
+version: 0.2.0;
+release: unreleased;
+---
+added: >
+    Configuration is now possible using environment variables.
+    Well, it's actually the only way to configure GiTils now but
+    don't mind that xD;
+changed[1]: Switched to Vibora;
+changed: Using Motor instead of Pymongo;
+changed: the entire structure of the project...;

@@ -1,8 +1,6 @@
-.idea/
-*.pyc
 *.egg-info/
+
+.idea/
 venv/
 
-
-*.bat
-config.cfg
+*.pyc

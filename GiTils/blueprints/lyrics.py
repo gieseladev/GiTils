@@ -1,46 +1,45 @@
-"""Lyrics endpoint."""
-
+import asyncio
 import logging
-import time
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+from typing import Optional
 
 import lyricsfinder
-from flask import Blueprint, current_app, jsonify
-from lyricsfinder.utils import safe_filename
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from vibora.blueprints import Blueprint
+from vibora.responses import JsonResponse
 
-from GiTils.gitils import mongo_database
+from gitils import Config, utils, GiTilsError
 
 log = logging.getLogger(__name__)
 
-blueprint = Blueprint("Lyrics", __name__)
+blueprint = Blueprint()
+executor = ProcessPoolExecutor()
+
+
+class LyricsNotFound(GiTilsError):
+    CODE = 404
+
+
+async def find_lyrics(query: str, google_api_key: str) -> Optional[lyricsfinder.Lyrics]:
+    searcher = lyricsfinder.search_lyrics(query, google_api_key=google_api_key)
+    return await asyncio.get_event_loop().run_in_executor(executor, partial(next, searcher, None))
 
 
 @blueprint.route("/lyrics/<query>")
-def get_lyrics(query):
-    """Return lyrics for query."""
-    coll = mongo_database.lyrics
-    lyrics_data = coll.find_one({"filename": safe_filename(query)})
+async def get_lyrics(query: str, config: Config, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
+    lyrics_data = await mongo_db.lyrics.find_one({"query": query})
 
     if not lyrics_data:
-        lyrics = next(lyricsfinder.search_lyrics(query, google_api_key=current_app.config["GOOGLE_API_KEY"]), None)
+        lyrics = await find_lyrics(query, config.google_api_key)
         if not lyrics:
-            return jsonify({
-                "success": False,
-                "error": f"Couldn't find any lyrics for that query. ({query})"
-            })
-        else:
-            lyrics_data = lyrics.to_dict()
-            lyrics_data["filename"] = lyrics.save_name
-            lyrics_data["timestamp"] = time.time()
-            log.debug(f"saved lyrics for query {query}")
-            coll.insert_one(lyrics_data)
+            raise LyricsNotFound(f"Couldn't find any lyrics for that query. ({query})")
 
-    lyrics = {
-        "success": True,
-        "title": lyrics_data["title"],
-        "artist": lyrics_data["artist"],
-        "release_date": lyrics_data["release_date"],
-        "lyrics": lyrics_data["lyrics"],
-        "origin": lyrics_data["origin"],
-        "timestamp": lyrics_data["timestamp"]
-    }
-    return jsonify(lyrics)
+        lyrics = lyrics.to_dict()
+        lyrics_data = dict(lyrics=lyrics, query=query)
+        await mongo_db.lyrics.insert_one(lyrics_data)
+        log.debug(f"saved lyrics for query {query}")
+    else:
+        lyrics = lyrics_data["lyrics"]
+
+    return utils.response(lyrics=lyrics)
