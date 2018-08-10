@@ -10,6 +10,7 @@ you're gonna have a bad time (maybe)!
 ## Changes
 - Ported to [Vibora]
     * Asynchronous request handling
+- Improved Webiesela flow
 - Docker stuff
 
 [Vibora]: https://vibora.io/

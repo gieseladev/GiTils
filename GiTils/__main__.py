@@ -71,6 +71,7 @@ def setup_logging():
     sentry_handler = SentryHandler(sentry_client)
     sentry_handler.setLevel(logging.ERROR)
     logging.root.addHandler(sentry_handler)
+    logging.getLogger("gitils").addHandler(sentry_handler)
 
 
 if __name__ == "__main__":

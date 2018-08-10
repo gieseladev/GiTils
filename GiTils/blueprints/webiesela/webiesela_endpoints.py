@@ -18,7 +18,8 @@ log = logging.getLogger(__name__)
 blueprint = Blueprint()
 
 DB_INDEXES = [
-    ("registration_tokens", dict(name="unique regtoken", unique=True, keys="regtoken"))
+    ("registration_tokens", dict(name="unique regtoken", unique=True, keys="regtoken")),
+    ("registration_tokens", dict(name="deleting obsolete regtokens", keys="updated_at", expireAfterSeconds=3600))
 ]
 
 

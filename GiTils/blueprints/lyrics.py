@@ -1,20 +1,21 @@
 import asyncio
 import logging
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import Optional
+from urllib.parse import unquote
 
 import lyricsfinder
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from vibora.blueprints import Blueprint
 from vibora.responses import JsonResponse
 
-from gitils import Config, utils, GiTilsError
+from gitils import Config, GiTilsError, utils
 
 log = logging.getLogger(__name__)
 
 blueprint = Blueprint()
-executor = ProcessPoolExecutor()
+executor = ThreadPoolExecutor()
 
 
 class LyricsNotFound(GiTilsError):
@@ -22,12 +23,13 @@ class LyricsNotFound(GiTilsError):
 
 
 async def find_lyrics(query: str, google_api_key: str) -> Optional[lyricsfinder.Lyrics]:
-    searcher = lyricsfinder.search_lyrics(query, google_api_key=google_api_key)
+    searcher = lyricsfinder.search_lyrics(query, google_api_key=google_api_key)  # TODO port lyricsfinder to async?
     return await asyncio.get_event_loop().run_in_executor(executor, partial(next, searcher, None))
 
 
 @blueprint.route("/lyrics/<query>")
 async def get_lyrics(query: str, config: Config, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
+    query = unquote(query)
     lyrics_data = await mongo_db.lyrics.find_one({"query": query})
 
     if not lyrics_data:

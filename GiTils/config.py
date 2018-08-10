@@ -5,6 +5,7 @@ from contextlib import suppress
 from typing import Any, List
 
 
+# noinspection PyUnreachableCode, PyUnresolvedReferences
 def get_env_value(key: str) -> Any:
     value = os.getenv(key)
     if value:
@@ -25,7 +26,7 @@ class Config:
 
     WEBIESELA_DEFAULT_PORT: int = 8000
     WEBIESELA_WEBSOCKET_TIMEOUT: float = 2.5
-    WEBIESELA_REGTOKEN_LENGTH: int = 6
+    WEBIESELA_REGTOKEN_LENGTH: int = 5
 
     active_blueprints: List[str] = ["webiesela", "lyrics", "tokens"]
     mongo_uri: str = "mongodb://localhost:27017/"

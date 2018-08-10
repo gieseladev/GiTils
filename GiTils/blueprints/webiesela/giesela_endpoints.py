@@ -1,99 +1,99 @@
+import logging
+from datetime import datetime
+from urllib.parse import urlparse
+
+from bson import ObjectId
+from bson.errors import InvalidId
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.errors import PyMongoError
+from vibora import Events, Request
 from vibora.blueprints import Blueprint
 from vibora.responses import JsonResponse
-from vibora import Request
-from datetime import datetime
-from gitils import utils
+
+from gitils import Config, InvalidRequest, utils
+from .errors import LoginError, TokenError
+from .utils import test_giesela_websocket
+
+log = logging.getLogger(__name__)
 
 blueprint = Blueprint()
 
+DB_INDEXES = [
+    ("giesela_instances", dict(name="unique gitoken", unique=True, keys="gitoken")),
+    ("giesela_instances", dict(name="unique ws_url", unique=True, keys="ws_url"))
+]
+
+
+@blueprint.handle(Events.BEFORE_SERVER_START)
+async def setup_database(mongo_db: AsyncIOMotorDatabase):
+    for collection, kwargs in DB_INDEXES:
+        try:
+            await mongo_db[collection].create_index(**kwargs)
+        except PyMongoError:
+            log.exception(f"Couldn't create index for collection {collection}")
+
+
 @blueprint.route("/giesela/register", methods=["post"])
-async def register_giesela_instance(request:Request) -> JsonResponse:
+async def register_giesela_instance(request: Request, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
+    coll = mongo_db.giesela_instances
     return utils.response(gitoken=None)
 
 
 @blueprint.route("/giesela/login/<gitoken>", methods=["post"])
-async def server_login(gitoken) -> JsonResponse:
-    coll = mongo_database.giesela_servers
-    ws_ip = request.remote_addr
+async def giesela_instance_login(gitoken: str, request: Request, mongo_db: AsyncIOMotorDatabase, config: Config) -> JsonResponse:
+    coll = mongo_db.giesela_instances
 
-    if gitoken == "new":
-        res = coll.find_one({"ip": ws_ip})
-        if res:
-            gitoken = res["_id"]
-        else:
-            gitoken = ObjectId()
-            res = {
-                "secure": False,
-                "port": 8000
-            }
-    else:
-        try:
-            gitoken = ObjectId(gitoken)
-        except InvalidId:
-            return error_response(Error.INVALID_REQUEST, f"The provided gitoken isn't a valid token ({gitoken})")
+    try:
+        gitoken = ObjectId(gitoken)
+    except InvalidId:
+        raise InvalidRequest(f"The provided gitoken isn't a valid token ({gitoken})")
 
-        res = coll.find_one({"_id": gitoken})
-        if not res:
-            return error_response(Error.TOKEN_UNKNOWN, f"This token isn't registered. ({gitoken})")
+    res = await coll.find_one({"gitoken": gitoken})
+    if not res:
+        raise TokenError(f"This token isn't registered. ({gitoken})", code=3)
 
-    ws_secure = cast_type(lambda v: v.lower() in {"true", "yes", "y", "t"}, request.args.get("secure"), res["secure"])
-    ws_port = cast_type(int, request.args.get("port"), res["port"])
+    ws_url = res["ws_url"]
+    parsed = urlparse(ws_url)
 
-    ws_prefix = "wss" if ws_secure else "ws"
-    ws_address = f"{ws_prefix}://{ws_ip}:{ws_port}"
-    if not test_websocket(ws_address, current_app.config["WEBIESELA_WS_TIMEOUT"]):
-        return error_response(Error.VALIDATION_ERROR, f"Couldn't validate address ({ws_address})")
+    result = await test_giesela_websocket(parsed.hostname, parsed.port, config.WEBIESELA_WEBSOCKET_TIMEOUT)
+    if not result:
+        raise LoginError(f"Couldn't validate address ({ws_url})", code=1)
 
-    coll.update_one({"_id": gitoken}, {
-        "$setOnInsert": {
-            "tokens": [],
-            "registered_at": datetime.utcnow()
-        },
-        "$set": {
-            "address": ws_address,
-            "ip": ws_ip,
-            "port": ws_port,
-            "secure": ws_secure,
-            "last_edit_at": datetime.utcnow()
-        }
-    }, upsert=True)
-    return response(address=ws_address, gitoken=str(gitoken))
-
-
-@blueprint.route("/giesela/regtoken/<regtoken>", methods=["post"])
-async def claim_token(regtoken) -> JsonResponse:
-    ip = request.remote_addr
-    server_coll = mongo_database.giesela_servers
-    server = server_coll.find_one({"ip": ip})
-    if not server:
-        return error_response(Error.SERVER_NOT_FOUND, f"No server with this ip address exists! ({ip})")
-    token_coll = mongo_database.registration_tokens
-    token = token_coll.find_one({"regtoken": regtoken})
-    if not token:
-        return error_response(Error.TOKEN_UNKNOWN, f"This token may have expired or is invalid ({regtoken})")
-    elif token["claimed"]:
-        return error_response(Error.TOKEN_CLAIMED, f"This token has already been claimed ({regtoken})")
-
-    server_coll.update_one({"ip": ip}, {
-        "$addToSet": {
-            "tokens": token["_id"]
+    await coll.update_one({"gitoken": gitoken}, {
+        "$currentData": {
+            "last_login_at": True
         }
     })
 
-    endpoint = {
-        "address": server["address"],
-        "secure": server["secure"],
-        "ip": server["ip"],
-        "port": server["port"]
-    }
-    token_coll.update_one({"regtoken": regtoken}, {
+    return utils.response()
+
+
+@blueprint.route("/giesela/register/<regtoken>", methods=["post"])
+async def claim_regtoken(regtoken: str, request: Request, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
+    gitoken = request  # TODO extract token from arguments
+
+    instance_coll = mongo_db.giesela_instances
+    giesela_instance = await instance_coll.find_one({"gitoken": gitoken})
+    if not giesela_instance:
+        raise TokenError(f"No Giesela instance with gitoken! ({gitoken})")
+
+    token_coll = mongo_db.registration_tokens
+    token = await token_coll.find_one({"regtoken": regtoken})
+
+    if not token:
+        raise TokenError(f"This token may have expired or is invalid ({regtoken})", code=2)
+    elif token.get("claimed", False):
+        raise TokenError(f"This token has already been claimed ({regtoken})", code=4)
+
+    await token_coll.update_one({"regtoken": regtoken}, {
         "$set": {
             "claimed": True,
-            "endpoint": endpoint,
+            "endpoint": giesela_instance["ws_url"],
             "updated_at": datetime.utcnow()
         }
     })
-    return response(token=token["_id"])
+    return utils.response(token=token["_id"])
+
 
 @blueprint.route("/giesela/token/<token>")
 async def get_token_information(token) -> JsonResponse:

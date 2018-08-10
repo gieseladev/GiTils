@@ -43,4 +43,4 @@ async def get_spotify_token(config: Config, mongo_db: AsyncIOMotorDatabase) -> J
     else:
         creds = document["token"]
 
-    return utils.response(creds)
+    return utils.response(**creds)
