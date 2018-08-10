@@ -23,11 +23,11 @@ class Config:
 
     WORKER_AMOUNT: int = None
 
-    WEBIESELA_PORT: int = 8000
-    WEBIESELA_WEBSOCKET_TIMEOUT: int = 5
+    WEBIESELA_DEFAULT_PORT: int = 8000
+    WEBIESELA_WEBSOCKET_TIMEOUT: float = 2.5
     WEBIESELA_REGTOKEN_LENGTH: int = 6
 
-    active_blueprints: List[str] = ["lyrics", "tokens"]
+    active_blueprints: List[str] = ["webiesela", "lyrics", "tokens"]
     mongo_uri: str = "mongodb://localhost:27017/"
     mongo_db: str = "GiTils"
 
