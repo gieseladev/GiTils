@@ -1,19 +1,14 @@
-import asyncio
 import random
+import re
 import string
+from typing import Pattern
 
-from vibora.client.websocket import WebsocketClient
+RE_SHA256: Pattern = re.compile(r"^[0-9a-f]{64}$")
 
 
-async def test_giesela_websocket(host: str, port: int, timeout: float) -> bool:
-    client = WebsocketClient(host, port, "/gitils")
-    try:
-        await asyncio.wait_for(client.connect(), timeout)
-    except asyncio.TimeoutError:
-        return False
-    else:
-        # TODO get information and close connection
-        return True
+def is_valid_sha256(hashed: str) -> bool:
+    match = RE_SHA256.match(hashed)
+    return match is not None
 
 
 _vowels = set("aeiou")

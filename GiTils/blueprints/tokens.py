@@ -33,13 +33,15 @@ async def get_spotify_creds(session: Session, config: Config) -> Dict[str, Any]:
 
 @blueprint.route("/tokens/spotify")
 async def get_spotify_token(config: Config, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
-    document = await mongo_db.tokens.find_one("spotify")
+    api_token_coll = mongo_db.api_tokens
+
+    document = await api_token_coll.find_one("spotify")
 
     # Token should be valid for at least another minute otherwise it's kinda pointless...
     if not document or document["token"]["expires_at"] >= time.time() - 60:
         async with Session() as session:
             creds = await get_spotify_creds(session, config)
-        await mongo_db.tokens.insert_one(dict(_id="spotify", token=creds))
+        await api_token_coll.insert_one(dict(_id="spotify", token=creds))
     else:
         creds = document["token"]
 

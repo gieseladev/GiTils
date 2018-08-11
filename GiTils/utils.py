@@ -1,7 +1,11 @@
-from typing import Any, Callable, TypeVar
+import logging
+from typing import Any, Callable, Dict, List, TypeVar, Union
 
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.errors import PyMongoError
 from vibora.responses import JsonResponse
 
+log = logging.getLogger(__name__)
 _DEFAULT = object()
 
 
@@ -30,10 +34,25 @@ T = TypeVar("T")
 TV = TypeVar("TV")
 
 
-def cast_type(cls: Callable[[TV], T], val: Any, default: Any = _DEFAULT) -> T:
+def cast_as(val: Any, cls: Callable[[TV], T], default: Any = _DEFAULT, *, raise_default: bool = True) -> T:
     try:
         return cls(val)
     except Exception as e:
         if default is _DEFAULT:
             raise e
+        elif raise_default and isinstance(default, Exception):
+            raise default
         return default
+
+
+IndexType = Dict[str, Any]
+
+
+async def create_indexes(mongo_db: AsyncIOMotorDatabase, index_map: Dict[str, Union[IndexType, List[IndexType]]]):
+    for collection, indexes in index_map.items():
+        indexes = indexes if isinstance(indexes, list) else [indexes]
+        for index in indexes:
+            try:
+                await mongo_db[collection].create_index(**index)
+            except PyMongoError:
+                log.warning(f"Couldn't create index for collection {collection}")

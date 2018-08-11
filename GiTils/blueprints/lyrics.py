@@ -29,8 +29,10 @@ async def find_lyrics(query: str, google_api_key: str) -> Optional[lyricsfinder.
 
 @blueprint.route("/lyrics/<query>")
 async def get_lyrics(query: str, config: Config, mongo_db: AsyncIOMotorDatabase) -> JsonResponse:
+    lyrics_coll = mongo_db.lyrics
+
     query = unquote(query)
-    lyrics_data = await mongo_db.lyrics.find_one({"query": query})
+    lyrics_data = await lyrics_coll.find_one({"query": query})
 
     if not lyrics_data:
         lyrics = await find_lyrics(query, config.google_api_key)
@@ -39,7 +41,7 @@ async def get_lyrics(query: str, config: Config, mongo_db: AsyncIOMotorDatabase)
 
         lyrics = lyrics.to_dict()
         lyrics_data = dict(lyrics=lyrics, query=query)
-        await mongo_db.lyrics.insert_one(lyrics_data)
+        await lyrics_coll.insert_one(lyrics_data)
         log.debug(f"saved lyrics for query {query}")
     else:
         lyrics = lyrics_data["lyrics"]
