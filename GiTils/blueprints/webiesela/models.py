@@ -112,7 +112,7 @@ DT = TypeVar("DT", bound=DbObject)
 
 async def aggregate_single(mongo_db: AsyncIOMotorDatabase, cls: Type[DT], target: Any, **fields: Type["DbObject"]) -> Optional[DT]:
     coll = mongo_db[cls.COLLECTION_NAME]
-    pipeline = []
+    pipeline = [{"$limit": 1}]
 
     target = cls.get_target_dict(target)
     pipeline.append({"$match": target})
