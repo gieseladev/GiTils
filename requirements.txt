@@ -5,3 +5,4 @@ spotipy==2.4.4
 lyricsfinder==1.2.8
 websocket-client==0.48.0
 dnspython==1.15.0
+werkzeug>=3.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
